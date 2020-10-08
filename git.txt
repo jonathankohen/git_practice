@@ -1,0 +1,40 @@
+=> Delete a .git file: 
+rm -rf .git
+
+=> brand new project:
+echo "# Musician Match" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/jonathankohen/musician_match.git
+git push -u origin main
+
+=> existing project (repo has files in it):
+git remote add origin https://github.com/jonathankohen/musician_match.git
+git branch -M main
+git push -u origin main
+
+git commit
+    C0
+    - Creates new commit, C1
+    - A commit in a git repository records a snapshot of all the (tracked) files in your directory. It's like a giant copy and paste, but even better!
+    - Git also maintains a history of which commits were made when. maintains history of proj
+    - Think of commits as snapshots of the project
+    C0 => C1(*master)
+
+git branch newImage
+    C0 => C1(*master)
+    - The branch newImage now refers to commit C1.
+    C0 => C1(*master, newImage)
+
+git checkout -b newImage
+    C0 => C1(*master, newImage)
+    - This will put us on the new branch before committing our changes, leaving     master on C1 (master), and creating C2 (newImage)
+    C0 => C1(master) => C2(*newImage)
+
+git merge bugFix
+    C0 => C1 => C2(bugFix [branch]) => C3(*master [branch])
+    - Merges two unique branches to a new commit
+    ! master contains all the work in the repository now.
+    C0 => C1 => C2(bugFix) => C3 => C4(*master)
