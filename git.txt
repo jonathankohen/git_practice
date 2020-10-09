@@ -21,20 +21,303 @@ git commit
     - A commit in a git repository records a snapshot of all the (tracked) files in your directory. It's like a giant copy and paste, but even better!
     - Git also maintains a history of which commits were made when. maintains history of proj
     - Think of commits as snapshots of the project
-    C0 => C1(*master)
+    C0 => C1(*main)
 
 git branch newImage
-    C0 => C1(*master)
+    C0 => C1(*main)
     - The branch newImage now refers to commit C1.
-    C0 => C1(*master, newImage)
+    C0 => C1(*main, newImage)
 
 git checkout -b newImage
-    C0 => C1(*master, newImage)
-    - This will put us on the new branch before committing our changes, leaving     master on C1 (master), and creating C2 (newImage)
-    C0 => C1(master) => C2(*newImage)
+    C0 => C1(*main, newImage)
+    - This will put us on the new branch before committing our changes, leaving     main on C1 (main), and creating C2 (newImage)
+    C0 => C1(main) => C2(*newImage)
 
-git merge bugFix
-    C0 => C1 => C2(bugFix [branch]) => C3(*master [branch])
+git merge <branch>
+    - HEAD = receiver (main)
+    - <branch> = giver
     - Merges two unique branches to a new commit
-    ! master contains all the work in the repository now.
-    C0 => C1 => C2(bugFix) => C3 => C4(*master)
+    ! Main contains all the work in the repository now.            
+    ! Don't forget to push to main!!
+                                                                0
+                                                                1
+                                                        2(b)          3(*m)
+                                                                =>
+                                                                0
+                                                                1
+                                                                2(b)
+                                                                3
+                                                                4(*m)
+    
+git checkout bugFix; git merge main
+    - Brings the mergee to the same level as main               
+                                                                0
+                                                                1
+                                                                2(b)
+                                                                3
+                                                                4(*m)
+                                                                =>
+                                                                0
+                                                                1
+                                                                2
+                                                                3
+                                                                4(m, *b)
+
+    
+
+git rebase (FROM) main
+    => git rebase (self, branches) <what you want to go under>
+    - Moves work from bugFix right into main as a new commit after it
+
+    - The second way of combining work between branches is rebasing. Rebasing essentially takes a set of commits, "copies" them, and plops them down somewhere else.
+
+    - While this sounds confusing, the advantage of rebasing is that it can be used to make a nice linear sequence of commits. The commit log / history of the repository will be a lot cleaner if only rebasing is allowed.
+
+    - Here we have two branches yet again; note that the bugFix branch is currently selected (note the asterisk)
+
+    ! We would like to move our work FROM HEAD (bugFix) directly onto the work from main <target>. That way it would look like these two features were developed sequentially, when in reality they were developed in parallel.
+
+    Checkout a new branch named bugFix
+    Commit once
+    Go back to master and commit again
+    Check out bugFix again and rebase onto master
+
+                                                                0
+                                                                1
+                                                        2*(bug)  3(main)
+                                                                =>
+                                                                0
+                                                                1
+                                                                2(main)
+                                                                (3)
+                                                                3'(*bug)
+
+git rebase (TO) bugFix 
+    => git rebase (self, same chain) <where you want to go>)
+    - There! Since master was an ancestor of bugFix, git simply moved the master branch reference forward in history.
+
+                                                                0
+                                                                1
+                                                                2(*main)
+                                                                (3)
+                                                                C3'(bug)
+                                                                =>
+                                                                0
+                                                                1
+                                                                2
+                                                                (3)
+                                                                3'(*m, b)
+
+git checkout C1
+    - HEAD is the symbolic name for the currently checked out commit -- it's essentially what commit you're working on top of.
+    ! Detaching HEAD just means attaching it to a commit instead of a branch.
+    HEAD -> main -> C1
+    HEAD -> C1
+
+git log 
+    - shows commit hashes, among other things
+    - hashes can be referenced by only a few characters
+
+relative refs
+    - Can be used on hashes, HEAD, or branches
+    - Moving upwards one commit at a time with ^. So saying main^ is equivalent to "the first parent of main".
+    - main^^ is the grandparent (second-generation ancestor) of main
+    - Moving upwards a number of times with ~<num (optional, just ~ goes up one)>
+    git checkout main^
+        - Moves HEAD to point to parent commit
+    git checkout HEAD~4
+        - Without anything else, goes up four commits from current commit
+    git branch -f main HEAD~3, git branch -f main C0
+        - One of the most common ways I use relative refs is to move branches around. You can directly reassign a branch to a commit with the -f option
+        - Moves (by force) the main branch to three parents behind HEAD
+    
+git reset HEAD~1 (on C2)
+    - git reset reverts changes by moving a branch reference backwards in time to an older commit. In this sense you can think of it as "rewriting history;" git reset will move a branch backwards as if the commit had never been made in the first place.
+    ! Git moved the master branch reference back to C1; now our local repository is in a state as if C2 had never happened.
+                                                                    0
+                                                                    1
+                                                                    2*
+                                                                    => 
+                                                                    0
+                                                                    1 
+                                                                    (2)
+
+git revert HEAD
+    ! In order to reverse changes and share those reversed changes with others, we need to use git revert. 
+    - Creates new commit below the HEAD. New commit C2' introduces changes -- it just happens to introduce changes that exactly reverses the commit of C2.
+    ! With reverting, you can push out your changes to share with others.
+                                                                    0
+                                                                    1
+                                                                    2* 
+                                                                    => 
+                                                                    0
+                                                                    1
+                                                                    2
+                                                                    2'*
+
+
+ADVANCED
+git cherry-pick <C1> <C2> <...>
+    - Copy a series of commits below your current location (HEAD)
+    git cherry-pick C2 C4
+                                                                    0
+                                                                    1
+                                                                2       5(HEAD)
+                                                                3
+                                                                4
+                                                                    =>
+                                                                    0
+                                                                    1
+                                                                2       5
+                                                                3       2'
+                                                                4       4'(HEAD)
+
+git rebase -i HEAD~4
+    - git will open up a UI to show you which commits are about to be copied below the target of the rebase. It also shows their commit hashes and messages
+    - For "real" git, the UI window means opening up a file in a text editor like vim.
+    - You can reorder commits simply by changing their order in the UI (in our window this means dragging and dropping with the mouse).
+    - You can choose to completely omit some commits. This is designated by pick -- toggling pick off means you want to drop the commit.
+    ! It is worth mentioning that in the real git interactive rebase you can do many more things like squashing (combining) commits, amending commit messages, and even editing the commits themselves.
+       => (below omitted 3, 4) (creates new branch at 1. 2,3,4,5 no longer pertinent)
+
+                                                                    0
+                                                                    1
+                                                                    2
+                                                                    3
+                                                                    4
+                                                                    5*
+                                                                    =>
+ 
+
+                                                                    0
+                                                                    1
+                                                                (2)     2'
+                                                                (3)     5'*
+                                                                (4)
+                                                                (5) 
+
+git tag v1 C1
+    - tags exist as anchors in the commit tree that designate certain spots.
+    0,1,2*
+    - We named the tag v1 and referenced the commit C1 explicitly. If you leave the commit off, git will just use whatever HEAD is at.
+    0,1(v1 tag),2*
+
+    For this level just create the tags in the goal visualization and then check v1 out. Notice how you go into detached HEAD state -- this is because you can't commit directly onto the v1 tag.
+
+git describe <ref> (anything git can resolve into a commit)
+    - If you don't specify a ref, git just uses where you're checked out right now (HEAD).
+    - Output looks like: <tag>_<numCommits>_g<hash>
+    ! Where tag is the closest ancestor tag in history, numCommits is how many commits away that tag is, and <hash> is the hash of the commit being described.
+
+                                                                    git rebase HEAD bugFix
+                                                                    git rebase bugFix side
+                                                                    git rebase -i side another
+                                                                    git rebase another master
+
+=> git rebase <where you are> <what you want to put under>
+
+
+git checkout main^2 (specifies 2nd parent (newest, highest # commit) instead of default first (oldest, lowest #))
+    - Rather than specifying the number of generations to go back (what ~ takes), the modifier on ^ specifies which parent reference to follow from a merge commit. Remember that merge commits have multiple parents, so the path to choose is ambiguous.
+
+    - Git will normally follow the "first" parent upwards from a merge commit, but specifying a number with ^ changes this default behavior.
+
+    ! Can be chained! git checkout HEAD~^2~2
+    
+    => git branch bugWork master~^2^
+        ! Does not move HEAD!
+
+- Branch one needs a re-ordering and a deletion of C5. 
+    git rebase master one
+    git rebase -i HEAD~4
+- two needs pure reordering
+    git checkout two
+    git cherry-pick C5 C4 C3 C2
+- three only needs one commit!
+    git branch -f three C2
+
+
+We will let you figure out how to solve this one -- make sure to check out our solution afterwards with show solution.
+
+FAVES
+    git checkout -b <name> 
+    git branch bugWork master~^2^
+    git rebase <location of target commit> <commit>
+    git rebase -i HEAD~4 (bottom up)
+    git cherry-pick C5 C4 C3 C2
+    git branch -f <location> <commit>
+    git merge
+
+
+Now that you've seen git clone in action, let's dive into what actually changed.
+
+The first thing you may have noticed is that a new branch appeared in our local repository called o/master. This type of branch is called a remote branch; remote branches have special properties because they serve a unique purpose.
+
+Remote branches reflect the state of remote repositories (since you last talked to those remote repositories). They help you understand the difference between your local work and what work is public -- a critical step to take before sharing your work with others.
+
+Remote branches have the special property that when you check them out, you are put into detached HEAD mode. Git does this on purpose because you can't work on these branches directly; you have to work elsewhere and then share your work with the remote (after which your remote branches will be updated).
+
+You may be wondering what the leading o/ is for on these remote branches. Well, remote branches also have a (required) naming convention -- they are displayed in the format of:
+
+<remote name>/<branch name>
+Hence, if you look at a branch named o/master, the branch name is master and the name of the remote is o.
+
+Most developers actually name their main remote origin, not o. This is so common that git actually sets up your remote to be named origin when you git clone a repository.
+
+Unfortunately the full name of origin does not fit in our UI, so we use o as shorthand :( Just remember when you're using real git, your remote is probably going to be named origin!
+
+That's a lot to take in, so let's see all this in action.
+
+
+
+To finish this level, commit once off of master and once after checking out o/master. This will help drive home how remote branches behave differently, and they only update to reflect the state of the remote.
+
+git fetch
+    - git fetch performs two main steps, and two main steps only. It:
+
+    - downloads the commits that the remote has but are missing from our local repository, updates where our remote branches point (for instance, o/master)
+
+    - git fetch essentially brings our local representation of the remote repository into synchronization with what the actual remote repository looks like (right now).
+
+    - git fetch usually talks to the remote repository through the Internet (via a protocol like http:// or git://).
+
+    - git fetch, however, does not change anything about your local state. It will not update your master branch or change anything about how your file system looks right now.
+
+    - This is important to understand because a lot of developers think that running git fetch will make their local work reflect the state of the remote. It may download all the necessary data to do that, but it does not actually change any of your local files. We will learn commands in later lessons to do just that :D
+
+    - So at the end of the day, you can think of running git fetch as a download step.
+
+git pull
+    - once you have new commits available locally, you can incorporate them as if they were just normal commits on other branches. This means you could execute commands like:
+    git cherry-pick o/master
+    git rebase o/master
+    git merge o/master
+    ! In fact, the workflow of fetching remote changes and then merging them is so common that git actually provides a command that does both at once! That command is git pull.
+    - git pull is essentially shorthand for a git fetch followed by a merge of whatever branch was just fetched.
+
+
+Go ahead and make a remote (with git clone), 
+fake some changes on that remote, 
+commit yourself, 
+and then pull down those changes.
+
+git fetch; git rebase o/master; git push
+    -Boom! We updated our local representation of the remote with git fetch, rebased our work to reflect the new changes in the remote, and then pushed them with git push.
+
+git fetch, git merge o/master, git push
+    -Boom! We updated our local representation of the remote with git fetch, merged the new work into our work (to reflect the new changes in the remote), and then pushed them with git push.
+    ! git pull --rebase is shorthand for a fetch and a rebase!
+
+git pull --rebase; git push
+    - For your rebasing pleasure
+
+git pull; git push
+    -Lit
+
+Clone your repo
+Fake some teamwork (1 commit)
+Commit some work yourself (1 commit)
+Publish your work via rebasing
+
+Create another branch called feature and push that to the remote. 
+Also reset your master back to be in sync with the remote otherwise you may have issues next time you do a pull and someone else's commit conflicts with yours.
